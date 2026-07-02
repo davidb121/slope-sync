@@ -70,11 +70,18 @@ export function MultiAssignSheet({ instructor, unassignedStudents, onClose, onDo
 
   return (
     <BottomSheet open={!!instructor} onClose={onClose} title={instructor?.full_name ?? ''}>
-      {instrLevel && (
-        <div className="text-slate-400 text-xs mb-3">
-          {classLabel(instrLevel)} · {instructor.students.length} student{instructor.students.length !== 1 ? 's' : ''} assigned
-        </div>
-      )}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        {instrLevel ? (
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-900/60 text-blue-200">
+            {classLabel(instrLevel)}
+          </span>
+        ) : (
+          <span className="text-xs text-slate-500">No class assigned</span>
+        )}
+        <span className="text-slate-500 text-xs">
+          {instructor.students.length} student{instructor.students.length !== 1 ? 's' : ''} assigned
+        </span>
+      </div>
 
       {/* Assign button — sticky so it stays visible while scrolling the list */}
       <div className="sticky top-0 pb-3 bg-slate-800 z-10">
