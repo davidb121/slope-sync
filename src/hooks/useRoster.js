@@ -33,8 +33,9 @@ export function useRoster() {
         .eq('lesson_date', today),
       supabase
         .from('instructor_classes')
-        .select('instructor_id, level:lesson_levels(id, code, label, discipline, age_min, level, sort_order)')
-        .eq('lesson_date', today),
+        .select('instructor_id, created_at, level:lesson_levels(id, code, label, discipline, age_min, level, sort_order)')
+        .eq('lesson_date', today)
+        .order('created_at', { ascending: false }),
     ])
 
     if (instrRes.error)  { setError(instrRes.error.message);  setLoading(false); return }
@@ -52,14 +53,10 @@ export function useRoster() {
 
     if (assignErr) { setError(assignErr.message); setLoading(false); return }
 
-    // Build class level map: instructor_id → sorted array of levels
+    // Build class level map: instructor_id → [most recent level] (results already ordered by created_at desc)
     const classMap = {}
     for (const c of classRes.data ?? []) {
-      if (!classMap[c.instructor_id]) classMap[c.instructor_id] = []
-      classMap[c.instructor_id].push(c.level)
-    }
-    for (const id of Object.keys(classMap)) {
-      classMap[id].sort((a, b) => a.sort_order - b.sort_order)
+      if (!classMap[c.instructor_id]) classMap[c.instructor_id] = [c.level]
     }
 
     // Group assigned students by instructor
