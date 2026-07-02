@@ -62,18 +62,40 @@ export function MultiAssignSheet({ instructor, unassignedStudents, onClose, onDo
     }
   }
 
+  const assignLabel = submitting
+    ? 'Assigning…'
+    : selected.size === 0
+      ? 'Select students below'
+      : `Assign ${selected.size} student${selected.size !== 1 ? 's' : ''} to ${instructor?.full_name}`
+
   return (
     <BottomSheet open={!!instructor} onClose={onClose} title={instructor?.full_name ?? ''}>
       {instrLevel && (
-        <div className="text-slate-400 text-xs mb-4">
+        <div className="text-slate-400 text-xs mb-3">
           {classLabel(instrLevel)} · {instructor.students.length} student{instructor.students.length !== 1 ? 's' : ''} assigned
         </div>
       )}
 
+      {/* Assign button — sticky so it stays visible while scrolling the list */}
+      <div className="sticky top-0 pb-3 bg-slate-800 z-10">
+        <button
+          onClick={handleAssign}
+          disabled={selected.size === 0 || submitting}
+          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl py-4 min-h-[56px] transition-colors"
+        >
+          {assignLabel}
+        </button>
+        {error && (
+          <p className="text-red-400 text-sm bg-red-950/40 border border-red-800 rounded-lg px-3 py-2 mt-2">
+            {error}
+          </p>
+        )}
+      </div>
+
       {unassignedStudents.length === 0 ? (
         <p className="text-slate-500 text-sm text-center py-8">No unassigned students remaining.</p>
       ) : (
-        <div className="flex flex-col gap-1.5 mb-5">
+        <div className="flex flex-col gap-1.5">
           {sorted.map(s => {
             const score = matchScore(s.booked_level, instrLevel)
             const isSelected = selected.has(s.id)
@@ -107,24 +129,6 @@ export function MultiAssignSheet({ instructor, unassignedStudents, onClose, onDo
           })}
         </div>
       )}
-
-      {error && (
-        <p className="text-red-400 text-sm bg-red-950/40 border border-red-800 rounded-lg px-3 py-2 mb-3">
-          {error}
-        </p>
-      )}
-
-      <button
-        onClick={handleAssign}
-        disabled={selected.size === 0 || submitting}
-        className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl py-4 min-h-[56px] transition-colors"
-      >
-        {submitting
-          ? 'Assigning…'
-          : selected.size === 0
-            ? 'Select students above'
-            : `Assign ${selected.size} student${selected.size !== 1 ? 's' : ''} to ${instructor?.full_name}`}
-      </button>
     </BottomSheet>
   )
 }
