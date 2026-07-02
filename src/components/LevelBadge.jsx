@@ -13,19 +13,20 @@ const COLORS = {
   'SBD-4':   'bg-violet-300 text-violet-900',
 }
 
-export function LevelBadge({ code, size = 'sm', selected = false }) {
+export function LevelBadge({ code, label, size = 'sm', selected = false }) {
   const base = COLORS[code] ?? 'bg-slate-600 text-slate-200'
   const ring = selected ? 'ring-2 ring-white ring-offset-1 ring-offset-slate-800' : ''
+  const display = label ?? code ?? '—'
   if (size === 'lg') {
     return (
       <span className={`${base} ${ring} font-bold text-sm px-3 py-2 rounded-xl min-h-[44px] min-w-[64px] flex items-center justify-center`}>
-        {code ?? '—'}
+        {display}
       </span>
     )
   }
   return (
     <span className={`${base} ${ring} font-bold text-xs px-2 py-0.5 rounded`}>
-      {code ?? '—'}
+      {display}
     </span>
   )
 }

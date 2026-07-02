@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { BottomSheet } from './BottomSheet'
 import { LevelBadge } from './LevelBadge'
-import { classLabel } from '../lib/classLabel'
+import { classLabel, studentLevelLabel } from '../lib/classLabel'
 
 const REASONS = [
   'Ability too high',
@@ -69,7 +69,7 @@ export function AssignSheet({ student, currentInstructor, allInstructors, onClos
           <div className="text-slate-300 text-sm">Age {student.age}</div>
           {student.notes && <div className="text-amber-400 text-xs mt-0.5">⚑ {student.notes}</div>}
         </div>
-        <LevelBadge code={displayLevel?.code} />
+        <LevelBadge code={displayLevel?.code} label={studentLevelLabel(displayLevel)} />
       </div>
 
       <div className="text-slate-400 text-xs mb-1">

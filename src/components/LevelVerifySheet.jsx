@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { BottomSheet } from './BottomSheet'
 import { LevelBadge } from './LevelBadge'
+import { studentLevelLabel } from '../lib/classLabel'
 
 function ageBand(age, discipline) {
   if (discipline === 'snowboard') return 'SBD'
@@ -52,11 +53,11 @@ export function LevelVerifySheet({ student, levels, onClose, onDone }) {
       </div>
       <div className="flex items-center gap-2 mb-5 text-xs text-slate-400">
         <span>Booked:</span>
-        <LevelBadge code={student.booked_level?.code} />
+        <LevelBadge code={student.booked_level?.code} label={studentLevelLabel(student.booked_level)} />
         {student.verified_level && (
           <>
             <span className="ml-2">Verified:</span>
-            <LevelBadge code={student.verified_level.code} />
+            <LevelBadge code={student.verified_level.code} label={studentLevelLabel(student.verified_level)} />
             <span className="text-emerald-400">✓</span>
           </>
         )}
@@ -72,6 +73,7 @@ export function LevelVerifySheet({ student, levels, onClose, onDone }) {
           >
             <LevelBadge
               code={l.code}
+              label={studentLevelLabel(l)}
               size="lg"
               selected={pendingLevelId ? pendingLevelId === l.id : currentLevelId === l.id}
             />
@@ -100,7 +102,7 @@ export function LevelVerifySheet({ student, levels, onClose, onDone }) {
           ? 'Saving…'
           : unchanged
             ? 'No change'
-            : `Set to ${pendingLevel?.code}`}
+            : `Set to ${studentLevelLabel(pendingLevel)}`}
       </button>
     </BottomSheet>
   )

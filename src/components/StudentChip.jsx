@@ -1,4 +1,5 @@
 import { LevelBadge } from './LevelBadge'
+import { studentLevelLabel } from '../lib/classLabel'
 
 export function StudentChip({ student, onAssign, onVerifyLevel }) {
   const displayLevel = student.verified_level ?? student.booked_level
@@ -24,7 +25,7 @@ export function StudentChip({ student, onAssign, onVerifyLevel }) {
         title={isVerified ? `Verified: ${displayLevel?.code}` : `Booked: ${displayLevel?.code} (unverified)`}
         onClick={e => { e.stopPropagation(); onVerifyLevel(student) }}
       >
-        <LevelBadge code={displayLevel?.code} />
+        <LevelBadge code={displayLevel?.code} label={studentLevelLabel(displayLevel)} />
         {isVerified && <span className="ml-0.5 text-emerald-400 text-xs">✓</span>}
       </span>
     </button>

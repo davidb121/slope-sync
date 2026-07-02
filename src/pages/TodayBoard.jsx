@@ -6,6 +6,7 @@ import { AssignSheet } from '../components/AssignSheet'
 import { InitialAssignSheet } from '../components/InitialAssignSheet'
 import { LevelVerifySheet } from '../components/LevelVerifySheet'
 import { LevelBadge } from '../components/LevelBadge'
+import { studentLevelLabel } from '../lib/classLabel'
 
 const DATE_LABEL = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 
@@ -146,7 +147,7 @@ export default function TodayBoard() {
                           <span className="ml-1 text-amber-400 text-xs" title={s.notes}>⚑</span>
                         )}
                       </span>
-                      <LevelBadge code={s.booked_level?.code} />
+                      <LevelBadge code={s.booked_level?.code} label={studentLevelLabel(s.booked_level)} />
                     </button>
                   ))}
                 </div>
