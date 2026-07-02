@@ -36,11 +36,10 @@ console.log(`Seeding for date ${roster.date} …\n`)
 
 // 1. Instructors
 const instrRows = roster.instructors.map(i => ({
-  external_id:  i.externalId,
-  full_name:    i.fullName,
-  disciplines:  i.disciplines,
-  cert_level:   i.certLevel  ?? null,
-  meeting_zone: i.meetingZone ?? null,
+  external_id: i.externalId,
+  full_name:   i.fullName,
+  disciplines: i.disciplines,
+  cert_level:  i.certLevel ?? null,
 }))
 const { error: instrErr } = await supabase.from('instructors').upsert(instrRows, { onConflict: 'external_id' })
 if (instrErr) { console.error('instructors:', instrErr.message); process.exit(1) }
@@ -51,19 +50,19 @@ const { data: levels, error: lvlErr } = await supabase.from('lesson_levels').sel
 if (lvlErr) { console.error('lesson_levels:', lvlErr.message); process.exit(1) }
 const levelMap = Object.fromEntries(levels.map(l => [l.code, l.id]))
 
-// 3. Students
+// 3. Students (all arrive unassigned — no pre-assignment from Lucee)
 const imported = [], flagged = []
 for (const s of roster.students) {
   const violation = validateStudent(s)
   if (violation) { flagged.push({ id: s.externalId, reason: violation }); continue }
   const { error } = await supabase.from('students').upsert({
-    external_id:    s.externalId,
-    first_name:     s.firstName,
-    last_name:      s.lastName,
-    age:            s.age,
+    external_id:     s.externalId,
+    first_name:      s.firstName,
+    last_name:       s.lastName,
+    age:             s.age,
     booked_level_id: levelMap[s.bookedLevel] ?? null,
-    notes:          s.notes || null,
-    lesson_date:    roster.date,
+    notes:           s.notes || null,
+    lesson_date:     roster.date,
   }, { onConflict: 'external_id' })
   if (error) { console.error(`student ${s.externalId}:`, error.message); process.exit(1) }
   imported.push(s.externalId)
@@ -72,23 +71,23 @@ console.log(`✓ students imported: ${imported.length}`)
 console.log(`✗ students flagged:  ${flagged.length}`)
 for (const f of flagged) console.log(`    ${f.id} — ${f.reason}`)
 
-// 4. Assignments
+// 4. Instructor class assignments (which level each instructor teaches today)
 const { data: instrDb } = await supabase.from('instructors').select('id, external_id')
-const { data: studDb  } = await supabase.from('students').select('id, external_id')
 const instrMap = Object.fromEntries(instrDb.map(i => [i.external_id, i.id]))
-const studMap  = Object.fromEntries(studDb.map(s => [s.external_id, s.id]))
 
-let created = 0, skipped = 0
-for (const a of roster.assignments ?? []) {
-  const studentId    = studMap[a.studentExternalId]
-  const instructorId = instrMap[a.instructorExternalId]
-  if (!studentId || !instructorId) { skipped++; continue }
-  const { error } = await supabase.from('assignments').insert({ student_id: studentId, instructor_id: instructorId, status: 'active' })
-  if (error?.code === '23505') { skipped++; continue }  // already exists
-  if (error) { console.error(`assignment:`, error.message); process.exit(1) }
-  created++
+let classCount = 0
+for (const ic of roster.instructorClasses ?? []) {
+  const instructorId = instrMap[ic.instructorExternalId]
+  const levelId      = levelMap[ic.levelCode]
+  if (!instructorId || !levelId) continue
+  const { error } = await supabase.from('instructor_classes').upsert(
+    { instructor_id: instructorId, level_id: levelId, lesson_date: roster.date },
+    { onConflict: 'instructor_id,level_id,lesson_date' }
+  )
+  if (error) { console.error(`instructor_class:`, error.message); process.exit(1) }
+  classCount++
 }
-console.log(`✓ assignments created: ${created}, skipped (already exist): ${skipped}`)
+console.log(`✓ instructor classes upserted: ${classCount}`)
 
 console.log('\nDone.')
 
