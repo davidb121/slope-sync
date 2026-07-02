@@ -79,7 +79,7 @@ export function MultiAssignSheet({ instructor, unassignedStudents, onClose, onDo
           <span className="text-xs text-slate-500">No class assigned</span>
         )}
         <span className="text-slate-500 text-xs">
-          {instructor.students.length} student{instructor.students.length !== 1 ? 's' : ''} assigned
+          {instructor?.students?.length ?? 0} student{(instructor?.students?.length ?? 0) !== 1 ? 's' : ''} assigned
         </span>
       </div>
 
