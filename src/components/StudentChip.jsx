@@ -10,8 +10,9 @@ export function StudentChip({ student, onAssign, onVerifyLevel }) {
       onClick={() => onAssign(student)}
     >
       <span className="flex-1 min-w-0">
-        <span className="text-white text-sm font-medium">
-          {student.first_name} {student.last_name[0]}.
+        <span className="text-white text-sm">
+          <span className="font-bold">{student.first_name}</span>{' '}
+          <span className="font-normal">{student.last_name[0]}.</span>
         </span>
         <span className="text-slate-400 text-xs ml-2">age {student.age}</span>
         {student.notes && (
