@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   const results = {
     date: roster.date,
     instructors: { upserted: 0 },
-    students: { imported: [], flagged: [] },
+    students: { imported: [], warned: [] },
     instructorClasses: { upserted: 0 },
   }
 
@@ -52,12 +52,11 @@ export default async function handler(req, res) {
   if (levelsErr) return res.status(500).json({ error: levelsErr.message })
   const levelMap = Object.fromEntries(levels.map((l) => [l.code, l.id]))
 
-  // 3. Upsert students, flagging rule violations
+  // 3. Upsert students — warn on rule violations but always import (manager can override)
   for (const s of roster.students ?? []) {
     const violation = validateStudent(s)
     if (violation) {
-      results.students.flagged.push({ externalId: s.externalId, name: `${s.firstName} ${s.lastName}`, reason: violation })
-      continue
+      results.students.warned.push({ externalId: s.externalId, name: `${s.firstName} ${s.lastName}`, reason: violation })
     }
 
     const row = {

@@ -50,11 +50,22 @@ const { data: levels, error: lvlErr } = await supabase.from('lesson_levels').sel
 if (lvlErr) { console.error('lesson_levels:', lvlErr.message); process.exit(1) }
 const levelMap = Object.fromEntries(levels.map(l => [l.code, l.id]))
 
-// 3. Students (all arrive unassigned — no pre-assignment from Lucee)
-const imported = [], flagged = []
+// 2b. Clear any existing assignments for today so students start unassigned
+const { data: todayStudents } = await supabase
+  .from('students').select('id').eq('lesson_date', roster.date)
+const todayIds = (todayStudents ?? []).map(s => s.id)
+if (todayIds.length) {
+  const { error: delErr } = await supabase
+    .from('assignments').delete().in('student_id', todayIds)
+  if (delErr) { console.error('clear assignments:', delErr.message); process.exit(1) }
+}
+console.log(`✓ assignments cleared for ${roster.date}`)
+
+// 3. Students — warn on rule violations but always import (manager can override)
+const imported = [], warned = []
 for (const s of roster.students) {
   const violation = validateStudent(s)
-  if (violation) { flagged.push({ id: s.externalId, reason: violation }); continue }
+  if (violation) warned.push({ id: s.externalId, reason: violation })
   const { error } = await supabase.from('students').upsert({
     external_id:     s.externalId,
     first_name:      s.firstName,
@@ -68,8 +79,10 @@ for (const s of roster.students) {
   imported.push(s.externalId)
 }
 console.log(`✓ students imported: ${imported.length}`)
-console.log(`✗ students flagged:  ${flagged.length}`)
-for (const f of flagged) console.log(`    ${f.id} — ${f.reason}`)
+if (warned.length) {
+  console.log(`⚠ students with warnings: ${warned.length}`)
+  for (const w of warned) console.log(`    ${w.id} — ${w.reason}`)
+}
 
 // 4. Instructor class assignments (which level each instructor teaches today)
 const { data: instrDb } = await supabase.from('instructors').select('id, external_id')
