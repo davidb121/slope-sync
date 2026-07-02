@@ -28,10 +28,12 @@ iOS PWAs have weaker offline-write support than a native app. Reads can be cache
 ## 2. Data Flow
 
 ```
-On-site SQL Server (Siriusware / existing tools)
+On-site SQL Server (Siriusware / UKG)
         │
         ▼
-Lucee CFML endpoint  ──►  https://skis.skirose.com/api/dailyRoster.cfm   [PLACEHOLDER]
+Lucee CFML server (skis.skirose.com) — two separate endpoints [PHASE 4]:
+  • /api/instructorAssignments.cfm  — which instructor teaches which class/level today
+  • /api/dailyStudents.cfm          — students enrolled for the day (no instructor pre-assignment)
         │
         ▼  (pulled by)
 Vercel Serverless Function (cron: each morning + on-demand "Refresh Roster" button)
@@ -41,8 +43,10 @@ Supabase (Postgres)  ◄──►  React PWA (supervisors' phones)
                               realtime subscriptions
 ```
 
-- **Import direction (SQL Server → Supabase):** daily student list, instructor list, pre-assignments from the POS.
-- **Write-back direction (Supabase → SQL Server):** end-of-day (or periodic) push of final assignments, level verifications, and check-in log back through a second Lucee endpoint. Deferred to Phase 4 — design the tables now so nothing blocks it.
+- **Instructor assignments (Lucee → Supabase):** the manager on duty assigns each instructor to a class/level in the Lucee/Siriusware system each morning. This app imports those assignments (`instructor_classes` table) — it does NOT let supervisors change which level an instructor teaches; that's the manager's job.
+- **Students (Lucee → Supabase):** daily list of enrolled students, all arriving **unassigned**. The manager does NOT pre-assign students to instructors. Students are assigned dynamically as they arrive on the mountain.
+- **Student assignments (Supabase, in this app):** supervisors choose an instructor and add students to that instructor's class as kids arrive. Classes form in real time.
+- **Write-back direction (Supabase → SQL Server):** end-of-day push of final assignments, level verifications, and check-in log. Deferred to Phase 4.
 
 ---
 
@@ -64,8 +68,19 @@ create table instructors (
   disciplines text[] not null default '{ski}',  -- '{ski}', '{snowboard}', or '{ski,snowboard}'
   cert_level text,                  -- e.g. PSIA/AASI level, kids-cert flags
   active boolean default true,
-  meeting_zone text,                -- where they line up in the morning
   created_at timestamptz default now()
+);
+
+-- Which class/level each instructor is assigned to teach on a given day.
+-- Set by the manager in the Lucee system; imported by the sync function.
+-- One instructor can have multiple rows per day (e.g. AM/PM sessions at different levels).
+create table instructor_classes (
+  id uuid primary key default gen_random_uuid(),
+  instructor_id uuid not null references instructors(id) on delete cascade,
+  level_id int not null references lesson_levels(id),
+  lesson_date date not null,
+  created_at timestamptz default now(),
+  unique (instructor_id, level_id, lesson_date)
 );
 
 create table lesson_levels (
@@ -158,41 +173,36 @@ create table checkins (
 
 ## 5. Placeholder Sync API
 
-Vercel serverless function `/api/sync-roster`:
+Vercel serverless function `/api/sync-roster` calls two separate Lucee endpoints (Phase 4). Until they exist, the function serves `data/seed.json` (`USE_STATIC_SEED=true`).
 
+**Endpoint 1 — Instructor assignments** (what each instructor is teaching today):
 ```
-GET https://skis.skirose.com/api/dailyRoster.cfm?date=2026-07-02&key=XXXX   [PLACEHOLDER]
+GET https://skis.skirose.com/api/instructorAssignments.cfm?date=2026-07-02&key=XXXX
 ```
-
-Expected response shape (contract to build the Lucee page against later):
-
 ```json
 {
-  "date": "2026-07-02",
-  "students": [
-    {
-      "externalId": "SW-104432",
-      "firstName": "Maya",
-      "lastName": "Torres",
-      "age": 7,
-      "discipline": "ski",
-      "bookedLevel": "SKI-B-2",
-      "notes": ""
-    }
-  ],
   "instructors": [
-    {
-      "externalId": "UKG-2211",
-      "fullName": "Hans Weber",
-      "disciplines": ["ski"],
-      "certLevel": "PSIA-2",
-      "meetingZone": "A"
-    }
+    { "externalId": "UKG-2211", "fullName": "Hans Weber", "disciplines": ["ski"], "certLevel": "PSIA-2" }
+  ],
+  "instructorClasses": [
+    { "instructorExternalId": "UKG-2211", "levelCode": "SKI-B-1" }
   ]
 }
 ```
 
-Until the Lucee page exists, the function serves this from a local `seed.json` (flag: `USE_STATIC_SEED=true`). Upsert logic keys on `external_id`, so switching from seed → live endpoint is a one-line env change.
+**Endpoint 2 — Students for the day** (all unassigned — no instructor pre-assignment):
+```
+GET https://skis.skirose.com/api/dailyStudents.cfm?date=2026-07-02&key=XXXX
+```
+```json
+{
+  "students": [
+    { "externalId": "SW-104432", "firstName": "Maya", "lastName": "Torres", "age": 7, "discipline": "ski", "bookedLevel": "SKI-B-2", "notes": "" }
+  ]
+}
+```
+
+Upsert logic keys on `external_id` for both instructors and students, so switching from seed → live endpoints is an env flag change.
 
 ---
 

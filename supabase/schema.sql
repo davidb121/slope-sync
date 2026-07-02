@@ -16,9 +16,9 @@ create table if not exists instructors (
   disciplines text[] not null default '{ski}',
   cert_level text,
   active boolean default true,
-  meeting_zone text,
   created_at timestamptz default now()
 );
+-- Existing instances: ALTER TABLE instructors DROP COLUMN IF EXISTS meeting_zone;
 
 create table if not exists lesson_levels (
   id serial primary key,
@@ -67,6 +67,18 @@ create table if not exists checkins (
   group_ok boolean,
   notes text,
   created_at timestamptz default now()
+);
+
+-- Which class/level each instructor is assigned to teach on a given day.
+-- Populated by the Lucee sync; supervisors read-only.
+-- One instructor can teach multiple classes per day (e.g. AM/PM sessions).
+create table if not exists instructor_classes (
+  id uuid primary key default gen_random_uuid(),
+  instructor_id uuid not null references instructors(id) on delete cascade,
+  level_id int not null references lesson_levels(id),
+  lesson_date date not null,
+  created_at timestamptz default now(),
+  unique (instructor_id, level_id, lesson_date)
 );
 
 -- Mt. Rose level taxonomy: exactly 12 buckets

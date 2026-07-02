@@ -93,7 +93,11 @@ export function AssignSheet({ student, currentInstructor, allInstructors, onClos
           >
             <span className="flex-1">
               <span className="font-medium text-sm">{i.full_name}</span>
-              <span className="text-slate-400 text-xs ml-2">Zone {i.meeting_zone}</span>
+              {i.assignedLevels?.length > 0 && (
+                <span className="text-slate-400 text-xs ml-2">
+                  {i.assignedLevels.map(l => l.code).join(', ')}
+                </span>
+              )}
             </span>
             {target?.id === i.id && <span className="text-blue-400 text-lg">✓</span>}
           </button>

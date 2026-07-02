@@ -27,17 +27,16 @@ export default async function handler(req, res) {
     date: roster.date,
     instructors: { upserted: 0 },
     students: { imported: [], flagged: [] },
-    assignments: { created: 0, skipped: 0 },
+    instructorClasses: { upserted: 0 },
   }
 
-  // 1. Upsert instructors
+  // 1. Upsert instructors (profile data only — class assignments handled separately)
   if (roster.instructors?.length) {
     const rows = roster.instructors.map((i) => ({
       external_id: i.externalId,
       full_name: i.fullName,
       disciplines: i.disciplines,
       cert_level: i.certLevel ?? null,
-      meeting_zone: i.meetingZone ?? null,
     }))
     const { error } = await supabase
       .from('instructors')
@@ -46,7 +45,7 @@ export default async function handler(req, res) {
     results.instructors.upserted = rows.length
   }
 
-  // 2. Fetch level map once for all student lookups
+  // 2. Fetch level map once for all student and class lookups
   const { data: levels, error: levelsErr } = await supabase
     .from('lesson_levels')
     .select('id, code')
@@ -77,32 +76,24 @@ export default async function handler(req, res) {
     results.students.imported.push(s.externalId)
   }
 
-  // 4. Create pre-assignments (skip if active assignment already exists)
-  if (roster.assignments?.length) {
+  // 4. Upsert instructor class assignments for the day
+  if (roster.instructorClasses?.length) {
     const { data: instructors } = await supabase.from('instructors').select('id, external_id')
-    const { data: students } = await supabase.from('students').select('id, external_id')
     const instrMap = Object.fromEntries(instructors.map((i) => [i.external_id, i.id]))
-    const studMap = Object.fromEntries(students.map((s) => [s.external_id, s.id]))
 
-    for (const a of roster.assignments) {
-      const studentId = studMap[a.studentExternalId]
-      const instructorId = instrMap[a.instructorExternalId]
-      if (!studentId || !instructorId) {
-        results.assignments.skipped++
-        continue
-      }
+    for (const ic of roster.instructorClasses) {
+      const instructorId = instrMap[ic.instructorExternalId]
+      const levelId = levelMap[ic.levelCode]
+      if (!instructorId || !levelId) continue
 
-      const { error } = await supabase.from('assignments').insert({
-        student_id: studentId,
-        instructor_id: instructorId,
-        status: 'active',
-      })
-
-      // 23505 = unique_violation: student already has an active assignment (idempotent re-run)
-      if (error && error.code !== '23505') {
-        return res.status(500).json({ error: error.message })
-      }
-      error ? results.assignments.skipped++ : results.assignments.created++
+      const { error } = await supabase
+        .from('instructor_classes')
+        .upsert(
+          { instructor_id: instructorId, level_id: levelId, lesson_date: roster.date },
+          { onConflict: 'instructor_id,level_id,lesson_date' }
+        )
+      if (error) return res.status(500).json({ error: error.message })
+      results.instructorClasses.upserted++
     }
   }
 
@@ -115,12 +106,16 @@ async function fetchRoster(req) {
     return JSON.parse(readFileSync(seedPath, 'utf8'))
   }
 
-  // Phase 4: live Lucee endpoint
+  // Phase 4: live Lucee endpoints
   const date = (req.query?.date) || new Date().toISOString().slice(0, 10)
-  const url = `${process.env.ROSTER_API_URL}?date=${date}&key=${process.env.ROSTER_API_KEY}`
-  const resp = await fetch(url)
-  if (!resp.ok) throw new Error(`Roster API returned ${resp.status}`)
-  return resp.json()
+  const [instrRes, studRes] = await Promise.all([
+    fetch(`${process.env.INSTRUCTOR_API_URL}?date=${date}&key=${process.env.ROSTER_API_KEY}`),
+    fetch(`${process.env.STUDENT_API_URL}?date=${date}&key=${process.env.ROSTER_API_KEY}`),
+  ])
+  if (!instrRes.ok) throw new Error(`Instructor API returned ${instrRes.status}`)
+  if (!studRes.ok)  throw new Error(`Student API returned ${studRes.status}`)
+  const [instrData, studData] = await Promise.all([instrRes.json(), studRes.json()])
+  return { date, instructors: instrData.instructors, instructorClasses: instrData.instructorClasses, students: studData.students }
 }
 
 // Returns a violation string, or null if the student is valid

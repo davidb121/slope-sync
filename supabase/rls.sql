@@ -2,12 +2,13 @@
 -- Service role (sync function) bypasses RLS automatically.
 -- Authenticated role = any logged-in supervisor.
 
-alter table profiles       enable row level security;
-alter table instructors    enable row level security;
-alter table lesson_levels  enable row level security;
-alter table students       enable row level security;
-alter table assignments    enable row level security;
-alter table checkins       enable row level security;
+alter table profiles            enable row level security;
+alter table instructors         enable row level security;
+alter table lesson_levels       enable row level security;
+alter table students            enable row level security;
+alter table assignments         enable row level security;
+alter table checkins            enable row level security;
+alter table instructor_classes  enable row level security;
 
 -- profiles: each user sees and edits only their own row
 create policy "profiles: own row select"
@@ -42,3 +43,7 @@ create policy "checkins: authenticated read"
   on checkins for select to authenticated using (true);
 create policy "checkins: authenticated insert"
   on checkins for insert to authenticated with check (true);
+
+-- instructor_classes: supervisors read; writes come only from the service-role sync function
+create policy "instructor_classes: authenticated read"
+  on instructor_classes for select to authenticated using (true);

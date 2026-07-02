@@ -2,3 +2,4 @@
 -- Run once in Supabase SQL Editor (or Dashboard → Database → Publications → supabase_realtime → Add table).
 alter publication supabase_realtime add table assignments;
 alter publication supabase_realtime add table students;
+alter publication supabase_realtime add table instructor_classes;
