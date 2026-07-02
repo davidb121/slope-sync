@@ -1,38 +1,28 @@
 import { StudentChip } from './StudentChip'
-
-const DISC_COLOR = {
-  ski:       'bg-blue-900 text-blue-300',
-  snowboard: 'bg-violet-900 text-violet-300',
-}
+import { classLabel } from '../lib/classLabel'
 
 export function InstructorCard({ instructor, onAssign, onVerifyLevel }) {
-  const { full_name, disciplines, cert_level, assignedLevels, students } = instructor
+  const { full_name, assignedLevels, students } = instructor
 
   return (
     <div className="bg-slate-800 rounded-2xl p-4">
       <div className="flex items-start gap-2 mb-3">
         <div className="flex-1 min-w-0">
           <div className="text-white font-semibold leading-tight">{full_name}</div>
-          <div className="text-slate-400 text-xs mt-0.5">{cert_level}</div>
-          {assignedLevels.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
+          {assignedLevels.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
               {assignedLevels.map(l => (
                 <span
                   key={l.id}
-                  className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-700 text-slate-200"
+                  className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-900/60 text-blue-200"
                 >
-                  {l.code}
+                  {classLabel(l)}
                 </span>
               ))}
             </div>
+          ) : (
+            <div className="text-slate-500 text-xs mt-0.5">No class assigned</div>
           )}
-        </div>
-        <div className="flex gap-1 flex-shrink-0 mt-0.5">
-          {disciplines.map(d => (
-            <span key={d} className={`text-xs font-bold px-1.5 py-0.5 rounded ${DISC_COLOR[d] ?? 'bg-slate-700 text-slate-300'}`}>
-              {d === 'ski' ? 'SKI' : 'SBD'}
-            </span>
-          ))}
         </div>
       </div>
 

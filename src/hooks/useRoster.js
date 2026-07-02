@@ -33,7 +33,7 @@ export function useRoster() {
         .eq('lesson_date', today),
       supabase
         .from('instructor_classes')
-        .select('instructor_id, level:lesson_levels(id, code, label, discipline, level, sort_order)')
+        .select('instructor_id, level:lesson_levels(id, code, label, discipline, age_min, level, sort_order)')
         .eq('lesson_date', today),
     ])
 

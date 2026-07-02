@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { BottomSheet } from './BottomSheet'
 import { LevelBadge } from './LevelBadge'
+import { classLabel } from '../lib/classLabel'
 
 const REASONS = [
   'Ability too high',
@@ -95,7 +96,7 @@ export function AssignSheet({ student, currentInstructor, allInstructors, onClos
               <span className="font-medium text-sm">{i.full_name}</span>
               {i.assignedLevels?.length > 0 && (
                 <span className="text-slate-400 text-xs ml-2">
-                  {i.assignedLevels.map(l => l.code).join(', ')}
+                  {i.assignedLevels.map(l => classLabel(l)).join(', ')}
                 </span>
               )}
             </span>
