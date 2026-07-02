@@ -58,12 +58,14 @@ export function InstructorCard({ instructor, onMultiAssign, onAssign, onVerifyLe
         )
       )}
 
-      <button
-        onClick={() => onMultiAssign(instructor)}
-        className="mt-2 w-full flex items-center justify-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-700 active:bg-slate-600 rounded-xl px-3 min-h-[44px] text-sm transition-colors border border-dashed border-slate-700"
-      >
-        + Assign students
-      </button>
+      {expanded && (
+        <button
+          onClick={() => onMultiAssign(instructor)}
+          className="mt-2 w-full flex items-center justify-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-700 active:bg-slate-600 rounded-xl px-3 min-h-[44px] text-sm transition-colors border border-dashed border-slate-700"
+        >
+          + Assign students
+        </button>
+      )}
     </div>
   )
 }
