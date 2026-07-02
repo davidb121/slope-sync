@@ -5,5 +5,10 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/sync-roster.js": {
+      "includeFiles": "data/seed.json"
+    }
+  }
 }
