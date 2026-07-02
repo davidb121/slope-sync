@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import LoginPage from './pages/LoginPage'
 import TodayBoard from './pages/TodayBoard'
+import ArrivingPage from './pages/ArrivingPage'
 
 export default function App() {
   const { session, loading } = useAuth()
@@ -24,6 +25,10 @@ export default function App() {
         <Route
           path="/"
           element={session ? <TodayBoard /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/arriving"
+          element={session ? <ArrivingPage /> : <Navigate to="/login" replace />}
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

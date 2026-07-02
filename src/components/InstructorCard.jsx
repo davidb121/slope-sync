@@ -1,7 +1,7 @@
 import { StudentChip } from './StudentChip'
 import { classLabel } from '../lib/classLabel'
 
-export function InstructorCard({ instructor, onAssign, onVerifyLevel }) {
+export function InstructorCard({ instructor, onMultiAssign, onAssign, onVerifyLevel }) {
   const { full_name, assignedLevels, students } = instructor
 
   return (
@@ -41,7 +41,14 @@ export function InstructorCard({ instructor, onAssign, onVerifyLevel }) {
         </div>
       )}
 
-      <div className="text-slate-600 text-xs mt-2.5 text-right">
+      <button
+        onClick={() => onMultiAssign(instructor)}
+        className="mt-3 w-full flex items-center justify-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-700 active:bg-slate-600 rounded-xl px-3 min-h-[44px] text-sm transition-colors border border-dashed border-slate-700"
+      >
+        + Assign students
+      </button>
+
+      <div className="text-slate-600 text-xs mt-2 text-right">
         {students.length} student{students.length !== 1 ? 's' : ''}
       </div>
     </div>
